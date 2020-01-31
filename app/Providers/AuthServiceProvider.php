@@ -5,6 +5,10 @@ namespace App\Providers;
 use App\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use App\Common\Utils\TokenManager;
+use App\Services\UserService;
+use App\Repositories\UserRepository;
+
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -15,7 +19,9 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->singleton(UserService::class, function ($app) {
+            return new UserService($app[UserRepository::class]);
+        });
     }
 
     /**
@@ -31,9 +37,17 @@ class AuthServiceProvider extends ServiceProvider
         // the User instance via an API token or any other method necessary.
 
         $this->app['auth']->viaRequest('api', function ($request) {
-            if ($request->input('api_token')) {
-                return User::where('api_token', $request->input('api_token'))->first();
+
+            if ($request->header('authorization')) {
+                $token = $request->header('authorization');
+                $token = str_replace('Bearer ', '', $token);
+                $tokenData = TokenManager::decode($token);
+                if ($tokenData) {
+                    $user =  $this->app[UserService::class]->detail(['id' => $tokenData['uid']], ['username', 'id', 'last_login_time', 'email']);
+                    return $user;
+                }
             }
+            return null;
         });
     }
 }

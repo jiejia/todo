@@ -6,7 +6,10 @@
     "type": "project",
     "require": {
         "php": "^7.2",
-        "laravel/lumen-framework": "^6.0"
+        "laravel/lumen-framework": "^6.0",
+        "lcobucci/jwt": "^3.3",
+        "prettus/l5-repository": "^2.6",
+        "tymon/jwt-auth": "^1.0@dev"
     },
     "require-dev": {
         "fzaninotto/faker": "^1.4",
