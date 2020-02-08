@@ -16,22 +16,22 @@ class BaseService
      * @var array
      */
     private static $message = [
-//        'required' => ':attribute 必填',
-//        'min' => ':attribute 的最小值应该为 :min',
-//        'max' => ':attribute 的最大值应该为 :max',
-//        'between' => ':attribute 应该在 :min - :max 之间',
-//        'same' => ':attribute 和属性 :other 必须一致.',
-//        'size' => ':attribute 必须为 :size.',
-//        'in' => ':attribute 是下面的值之一: :values',
-//        'exists' => ':attribute 不存在',
-//        'unique' => ':attribute 必须为唯一',
-//        'boolean' => ':attribute 必须为bool类型',
-//        'json' => ':attribute 必须为json格式',
-//        'string' => ':attribute 必须为字符串类型',
-//        'date' => ':attribute 必须为日期时间格式',
-//        'array' => ':attribute 必须为array类型',
-//        'numeric' => ':attribute 必须为数字',
-//        'integer' => ':attribute 必须为整数'
+        'required' => ':attribute 必填',
+        'min' => ':attribute 的最小值应该为 :min',
+        'max' => ':attribute 的最大值应该为 :max',
+        'between' => ':attribute 应该在 :min - :max 之间',
+        'same' => ':attribute 和属性 :other 必须一致.',
+        'size' => ':attribute 必须为 :size.',
+        'in' => ':attribute 是下面的值之一: :values',
+        'exists' => ':attribute 不存在',
+        'unique' => ':attribute 必须为唯一',
+        'boolean' => ':attribute 必须为bool类型',
+        'json' => ':attribute 必须为json格式',
+        'string' => ':attribute 必须为字符串类型',
+        'date' => ':attribute 必须为日期时间格式',
+        'array' => ':attribute 必须为array类型',
+        'numeric' => ':attribute 必须为数字',
+        'integer' => ':attribute 必须为整数',
     ];
 
     protected function validate(array $data, array $rules, array $messages = [], array $customAttributes = []): array

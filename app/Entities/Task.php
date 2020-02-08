@@ -2,17 +2,13 @@
 
 namespace App\Entities;
 
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
-use Laravel\Lumen\Auth\Authorizable;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-
-class User extends Model implements AuthenticatableContract, AuthorizableContract
+class Task extends Model
 {
-    use Authenticatable, Authorizable;
+
+    use SoftDeletes;
 
     /**
      * 指示是否自动维护时间戳
@@ -27,7 +23,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      * @var array
      */
     protected $fillable = [
-        'username', 'email', 'password', 'api_token', 'last_login_time'
+        'title', 'content', 'deadline', 'category_id', 'status', 'user_id', 'tags'
     ];
 
     /**
@@ -52,13 +48,19 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      * @var array
      */
     protected $hidden = [
-        'password', 'last_token'
     ];
 
-    //将密码进行加密
-    public function setPasswordAttribute($value)
+    public function setDeadlineAttribute($value)
     {
-        $this->attributes['password'] = Hash::make($value);
+        if (empty($value)) {
+            $value = date('Y-m-d H:i:s');
+        }
+        $this->attributes['deadline'] = strtotime($value);
+    }
+
+    public function getCategoryIdAttribute($value)
+    {
+        return (int)$value;
     }
 
     public function getCreatedAtAttribute($value)
@@ -71,4 +73,13 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
         return (int)$value;
     }
 
+    public function getDeadlineAttribute($value)
+    {
+        return (int)$value;
+    }
+
+    public function getUserIdAttribute($value)
+    {
+        return (int)$value;
+    }
 }

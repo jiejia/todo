@@ -95,7 +95,15 @@ class CategoryService extends BaseService
         $this->validate($data, $rules);
 
         $pagination = $this->categoryRepository->condition($data)->paginate(10);
-        return $pagination;
+        $records = $pagination->all();
+
+        return [
+            'records' => $records,
+            'total' => $pagination->total(),
+            'current' => $pagination->currentPage(),
+            'size' => (int)$pagination->perPage(),
+            'pages' => ceil($pagination->total() / $pagination->perPage()),
+        ];
     }
 
     /**

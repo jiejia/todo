@@ -41,9 +41,9 @@ class Authenticate
             $response = [
               'code' => ResultCode::UNAUTHORIZED['code'],
               'msg' => ResultCode::UNAUTHORIZED['msg'],
-               'data' => []
+              'data' => []
             ];
-            return response()->json($response, 401, ['X-Header-One' => 'Header Value']);
+            return response($response, 401, ['X-Header-One' => 'Header Value']);
         }
 
         return $next($request);

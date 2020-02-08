@@ -1,18 +1,16 @@
 <?php
 
-namespace App\Entities;
+namespace App\Entities\Task;
 
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
-use Laravel\Lumen\Auth\Authorizable;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-
-class User extends Model implements AuthenticatableContract, AuthorizableContract
+class Category extends Model
 {
-    use Authenticatable, Authorizable;
+
+    use SoftDeletes;
+
+    public $table = 'task_category';
 
     /**
      * 指示是否自动维护时间戳
@@ -27,7 +25,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      * @var array
      */
     protected $fillable = [
-        'username', 'email', 'password', 'api_token', 'last_login_time'
+        'name', 'user_id', 'status'
     ];
 
     /**
@@ -52,14 +50,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      * @var array
      */
     protected $hidden = [
-        'password', 'last_token'
     ];
-
-    //将密码进行加密
-    public function setPasswordAttribute($value)
-    {
-        $this->attributes['password'] = Hash::make($value);
-    }
 
     public function getCreatedAtAttribute($value)
     {
@@ -71,4 +62,8 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
         return (int)$value;
     }
 
+    public function getUserIdAttribute($value)
+    {
+        return (int)$value;
+    }
 }

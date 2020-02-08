@@ -91,15 +91,13 @@ class UserService extends BaseService
     }
 
     /**
-     * 用户登录
-     *
      * @param array $data
      * @return array
      * @throws PasswordException
-     *
-     * @version  2020/1/31 11:12
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
      * @author   jiejia <jiejia2009@gmail.com>
      * @license  PHP Version 7.3.4
+     * @version  2020/2/1 11:43
      */
     public function login(array $data)
     {
@@ -146,7 +144,7 @@ class UserService extends BaseService
      * @author   jiejia <jiejia2009@gmail.com>
      * @license  PHP Version 7.3.4
      */
-    public function list(array $param = [])
+    public function listOrSearch(array $param = [])
     {
         $this->validate($param, $this->searchRules);
 
@@ -163,38 +161,26 @@ class UserService extends BaseService
     }
 
     /**
-     * 获取单条记录
+     * 用户详情
      *
-     * @param array $where
+     * @param array $data
      * @param array $columns
      * @return mixed
      *
-     * @version  2020/1/31 10:05
+     * @version  2020/2/1 11:44
      * @author   jiejia <jiejia2009@gmail.com>
      * @license  PHP Version 7.3.4
      */
-    public function detail(array $where, $columns = ['*'])
+    public function detail(array $data, $columns = ['*'])
     {
+        $rules = [
+            'id' => 'bail|required|integer|exists:users',
+        ];
+        $this->validate($data, $rules);
+
+        $where = ['id' => $data['id']];
         $record = $this->userRepository->findWhere($where, $columns)->first();
 
-        return $record;
-    }
-
-
-    /**
-     * 格式化返回值
-     *
-     * @param $record
-     * @return mixed
-     *
-     * @license  PHP Version 7.3.4
-     * @version  2019/10/6 10:52
-     * @author   jiejia <jiejia2009@gmail.com>
-     */
-    public function formatReturn($record)
-    {
-//        $record->tags = explode(',', $record->tags);
-//        $record->type = self::TYPE[$record->cate_id];
         return $record;
     }
 
@@ -210,51 +196,41 @@ class UserService extends BaseService
      * @license  PHP Version 7.3.4
      * @version  2019/10/7 9:48
      */
-    public function update(array $data, $id)
+    public function update(array $data)
     {
-        $user = $this->single($id);
-        $rules = $this->rules;
+        $this->validate(['id' => $data['user_id']], ['id' => 'required|bail|integer|exists:users,id']);
+        $user = $this->userRepository->find($data['user_id']);
 
-        # 处理数据
-        if (isset($data['old_password']) && !empty($data['old_password'])) {
-
-            #验证修改密码
-            $rules['old_password'] = [
+        $rules = [
+            //'username' => 'bail|required|string|max:20|unique:users',
+            'old_password' => [
                 'bail',
-                'required',
                 function ($attribute, $value, $fail) use ($user, $data){
                     if (! Hash::check($data['old_password'], $user->password)) {
-                        $fail($attribute.' is invalid.');
+                        $fail('旧密码错误');
                     }
                 },
-            ];
-            $rules['password'] = [
+            ],
+            'password' => [
                 'bail',
                 'required_with:old_password',
                 'between:6,20',
                 'different:old_password',
-                'confirmed '
-            ];
-            $rules['password_confirmation'] = [
+                'confirmed'
+            ],
+            'password_confirmation' => [
                 'bail',
-                'required_with:password',
-            ];
-        }
-
-
-        # 验证用户名
-        $rules['name'] = [
-            'bail',
-            'between:2,20',
-            Rule::unique('users', 'id')->ignore($id),
+                'required_with:password'
+            ],
+        ];
+        $messages = [
+            'password.required_with' => '新密码不能为空',
+            'password.between' => '新密码应该为6到20个字符',
+            'password.different' => '新密码不能和久密码相同',
+            'password.confirmed' => '新密码和确认密码不同',
         ];
 
-        $this->validate($data, $rules, $this->message);
-
-        if (isset($data['old_password']) && !empty($data['old_password'])) {
-            $data['password'] = Hash::make($data['password']);
-        }
-
-        return $this->userRepository->update($data, $id);
+        $this->validate($data, $rules, $messages);
+        return $this->userRepository->update($data, $data['user_id']);
     }
 }

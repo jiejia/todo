@@ -20,9 +20,10 @@ $router->get('/key', function () use ($router) {
     return  Str::random (32);
 });
 
-
 $router->group(['prefix' => 'api'], function () use ($router) {
     $router->post('/user/store', ['as' => 'user.store', 'uses' => 'UserController@store']);
+    $router->post('/user/detail', ['as' => 'user.detail', 'uses' => 'UserController@detail']);
+    $router->post('/user/update', ['as' => 'user.update', 'uses' => 'UserController@update']);
     $router->post('/user/login', ['as' => 'user.login', 'uses' => 'UserController@login']);
     $router->post('/user/logout', ['as' => 'user.logout', 'uses' => 'UserController@logout']);
 
