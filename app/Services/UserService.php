@@ -2,13 +2,10 @@
 namespace App\Services;
 
 use App\Common\Services\BaseService;
-use App\Entities\PasswordReset;
-use App\Entities\Task\Category;
 use App\Exceptions\PasswordException;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Hash;
 use App\Common\Utils\TokenManager;
-use Mockery\Generator\StringManipulation\Pass\Pass;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
@@ -16,6 +13,7 @@ use App\Repositories\PasswordResetRepository;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use App\Services\Task\CategoryService;
+use Illuminate\Validation\Rule;
 
 class UserService extends BaseService
 {
@@ -220,7 +218,7 @@ class UserService extends BaseService
     }
 
     /**
-     * 更新用户
+     * 修改密码
      *
      * @param array $data
      * @param $id
@@ -231,9 +229,9 @@ class UserService extends BaseService
      * @license  PHP Version 7.3.4
      * @version  2019/10/7 9:48
      */
-    public function update(array $data)
+    public function changePassword(array $data)
     {
-        $this->validate(['id' => $data['user_id']], ['id' => 'required|bail|integer|exists:users,id']);
+        $this->validate(['id' => $data['id']], ['id' => 'required|bail|integer|exists:users,id']);
         $user = $this->userRepository->find($data['user_id']);
 
         $rules = [
@@ -266,7 +264,66 @@ class UserService extends BaseService
         ];
 
         $this->validate($data, $rules, $messages);
-        return $this->userRepository->update($data, $data['user_id']);
+        return $this->userRepository->update($data, $data['id']);
+    }
+
+    /**
+     * 更新个人信息
+     *
+     * @param array $data
+     * @return mixed
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
+     *
+     * @version  2020-5-9 14:37
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
+     */
+    public function updateProfile(array $data)
+    {
+        $rules = [
+            'id' => 'bail|required|integer|exists:users',
+//            'email' => 'bail|required|string|max:30|unique:users|email',
+            'nickname' => [
+                'bail',
+                'between:6,30',
+                Rule::unique('users')->ignore($data['id'], 'id')
+            ]
+        ];
+        $messages = [
+            'nickname.between' => '昵称长度应该在6到30个字符之间',
+            'nickname.unique' => '昵称已存在',
+        ];
+
+        $this->validate($data, $rules, $messages);
+        return $this->userRepository->update($data, $data['id']);
+    }
+
+    /**
+     * 更换头像
+     *
+     * @param array $data
+     * @return mixed
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
+     *
+     * @version  2020-5-9 15:26
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
+     */
+    public function changeAvatar(array $data)
+    {
+        $rules = [
+            'id' => 'bail|required|integer|exists:users',
+            'avatar' => 'bail|required|image|max:2048|mimes:jpeg,gif,png',
+        ];
+        $messages = [
+            'avatar.required' => '上传文件为空',
+            'avatar.image' => '上传文件必须为图片',
+            'avatar.max' => '上传文件大小应小于2m',
+            'avatar.mimes' => '上传文件必须为jpeg,gif,png格式'
+        ];
+
+        $this->validate($data, $rules, $messages);
+        return $this->userRepository->update($data, $data['id']);
     }
 
     /**

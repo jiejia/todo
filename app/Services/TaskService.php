@@ -20,12 +20,12 @@ class TaskService extends BaseService
      */
     protected $rules = [
         'id' => 'bail|integer|exists:tasks,id',
-        'title' => 'bail|required|string|between:1,100',
+        'title' => 'bail|required_without:id|string|between:1,100',
         'tags' => 'bail|string|between:1,100',
         'content' => 'bail|string|between:0,255',
         'deadline' => 'bail|required_without:id|date',
 
-        'category_id' => 'bail|required|integer|exists:task_category,id', // TODO 任务分类需要验证是否属于当前登录用户
+        'category_id' => 'bail|required_without:id|integer|exists:task_category,id', // TODO 任务分类需要验证是否属于当前登录用户
         'user_id' => 'bail|required|integer|exists:users,id',
     ];
 

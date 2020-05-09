@@ -19,13 +19,22 @@ $router->get('/', function () use ($router) {
 $router->get('/key', function () use ($router) {
     return  Str::random (32);
 });
+$router->get('/test/index', ['as' => 'test.index', 'uses' => 'ExampleController@index']);
 
 $router->group(['prefix' => 'api'], function () use ($router) {
+
     $router->post('/user/store', ['as' => 'user.store', 'uses' => 'UserController@store']);
     $router->post('/user/detail', ['as' => 'user.detail', 'uses' => 'UserController@detail']);
-    $router->post('/user/update', ['as' => 'user.update', 'uses' => 'UserController@update']);
+    $router->post('/user/changePassword', ['as' => 'user.changePassword', 'uses' => 'UserController@changePassword']);
+    $router->post('/user/updateProfile', ['as' => 'user.updateProfile', 'uses' => 'UserController@updateProfile']);
+    $router->post('/user/changeAvatar', ['as' => 'user.changeAvatar', 'uses' => 'UserController@changeAvatar']);
+
     $router->post('/user/login', ['as' => 'user.login', 'uses' => 'UserController@login']);
+    $router->post('/user/check-login', ['as' => 'user.checkLogin', 'uses' => 'UserController@checkLogin']);
     $router->post('/user/logout', ['as' => 'user.logout', 'uses' => 'UserController@logout']);
+    $router->post('/user/send-password-email', ['as' => 'user.sendPasswordEmail', 'uses' => 'UserController@sendPasswordEmail']);
+    $router->post('/user/password-reset', ['as' => 'user.passwordReset', 'uses' => 'UserController@passwordReset']);
+
 
     $router->post('/task/create-or-update', ['as' => 'task.createOrUpdate', 'uses' => 'TaskController@createOrUpdate']);
     $router->post('/task/list-or-search', ['as' => 'task.listOrSearch', 'uses' => 'TaskController@listOrSearch']);
@@ -38,3 +47,16 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->post('/task/category/delete', ['as' => 'task_category.delete', 'uses' => 'Task\CategoryController@delete']);
 
 });
+$router->group(['prefix' => 'weapp'], function () use ($router) {
+    $router->get('/login', 'WeChatController@login');
+    $router->get('/user', 'WeChatController@user');
+
+
+    $router->post('/login', 'WeChatController@login');
+    $router->post('/user', 'WeChatController@user');
+
+    $router->get('/check-session', 'WeChatController@checkSession');
+
+});
+
+

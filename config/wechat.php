@@ -10,6 +10,8 @@
  */
 
 return [
+    'app_id' => 'wx5d70163dd5ed9c62',
+    'app_secret' => '6d470778a04e45dd164ad57957cec49a',
     /*
      * 默认配置，将会合并到各模块中
      */

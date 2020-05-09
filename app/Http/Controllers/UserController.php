@@ -52,10 +52,52 @@ class UserController extends Controller
         }
     }
 
-    public function update(Request $request): array
+    /**
+     * 修改密码
+     *
+     * @param Request $request
+     * @return array
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
+     *
+     * @version  2020-5-9 14:36
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
+     */
+    public function changePassword(Request $request): array
     {
         try {
-            $data = $this->userService->update(array_merge($request->all(), ['user_id' => Auth::id()]));
+            $data = $this->userService->changePassword(array_merge($request->all(), ['id' => Auth::id()]));
+            return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
+        } catch (ValidationException $e) {
+            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+        }
+    }
+
+    /**
+     * 更新个人信息
+     *
+     * @param Request $request
+     * @return array
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
+     *
+     * @version  2020-5-9 14:37
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
+     */
+    public function updateProfile(Request $request): array
+    {
+        try {
+            $data = $this->userService->updateProfile(array_merge($request->all(), ['id' => Auth::id()]));
+            return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
+        } catch (ValidationException $e) {
+            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+        }
+    }
+
+    public function changeAvatar(Request $request): array
+    {
+        try {
+            $data = $this->userService->changeAvatar(array_merge($request->all(), ['id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
             return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];

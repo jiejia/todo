@@ -27,7 +27,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      * @var array
      */
     protected $fillable = [
-        'username', 'email', 'password', 'api_token', 'last_login_time', 'avatar', 'openid', 'session_key', 'gender'
+        'username', 'nickname', 'email', 'password', 'api_token', 'last_login_time', 'avatar', 'openid', 'session_key', 'gender'
     ];
 
     /**
@@ -52,7 +52,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      * @var array
      */
     protected $hidden = [
-        'password', 'last_token'
+        'password', 'last_token', 'api_token'
     ];
 
     //将密码进行加密
