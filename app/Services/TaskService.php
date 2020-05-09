@@ -20,12 +20,12 @@ class TaskService extends BaseService
      */
     protected $rules = [
         'id' => 'bail|integer|exists:tasks,id',
-        'title' => 'bail|required_without:id|string|between:1,100',
+        'title' => 'bail|required|string|between:1,100',
         'tags' => 'bail|string|between:1,100',
         'content' => 'bail|string|between:0,255',
         'deadline' => 'bail|required_without:id|date',
 
-        'category_id' => 'bail|required_without:id|integer|exists:task_category,id', // TODO 任务分类需要验证是否属于当前登录用户
+        'category_id' => 'bail|required|integer|exists:task_category,id', // TODO 任务分类需要验证是否属于当前登录用户
         'user_id' => 'bail|required|integer|exists:users,id',
     ];
 
@@ -34,7 +34,9 @@ class TaskService extends BaseService
       'id.exists' => 'ID不存在',
       'title.required' => '标题必填',
       'title.between' => '标题不能大于100个字符',
-      'category_id.exists' => '任务分类不存在'
+      'category_id.exists' => '任务分类不存在',
+      'deadline.required_without' => '结束时间不能为空',
+      'category_id.required' => '任务分类'
     ];
 
     /**
@@ -68,7 +70,10 @@ class TaskService extends BaseService
      */
     public function createOrUpdate(array $data)
     {
-        $this->validate($data, $this->rules);
+        if (empty($data['deadline'])) {
+            $data['deadline'] = date('Y-m-d H:i:s');
+        }
+        $this->validate($data, $this->rules, $this->messages);
 
         if (isset($data['id'])) {
             return $this->taskRepository->update($data, $data['id']);
@@ -102,9 +107,8 @@ class TaskService extends BaseService
 
         $this->validate($data, $rules);
 
-        $pagination = $this->taskRepository->condition($data)->paginate(10);
+        $pagination = $this->taskRepository->condition($data)->paginate(20);
         $records = $pagination->all();
-
         return [
             'records' => $records,
             'total' => $pagination->total(),

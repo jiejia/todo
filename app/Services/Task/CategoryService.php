@@ -18,8 +18,9 @@ class CategoryService extends BaseService
      */
     protected $rules = [
         'id' => 'bail|integer|exists:tasks,id',
-        'name' => 'bail|required|string|between:1,100',
+        'name' => 'bail|required|string|between:1,10',
         'status' => 'bail|integer|in:0,1,2,3,4',
+        'color' => 'bail|required|string|size:7',
         'user_id' => 'bail|required|integer|exists:users,id',
     ];
 
@@ -62,7 +63,26 @@ class CategoryService extends BaseService
      */
     public function createOrUpdate(array $data)
     {
-        $this->validate($data, $this->rules);
+        $rules = $this->rules;
+        $rules['color'] = [
+          'bail', 'required',
+           'regex:/^#[0-9a-zA-Z]{6}$/'
+        ];
+        $rules['name'] = [
+            'bail',
+            'required',
+            'string',
+            'between:1,10',
+            function($attribute, $value, $fail) use ($data) {
+                $count = $this->categoryRepository->findWhere(['user_id' => $data['user_id']])->count();
+
+//                dd($count);
+                if ($count > 14) {
+                    return $fail("清单最多15个");
+                }
+            }
+        ];
+        $this->validate($data, $rules);
 
         if (isset($data['id'])) {
             return $this->categoryRepository->update($data, $data['id']);
@@ -96,6 +116,11 @@ class CategoryService extends BaseService
 
         $pagination = $this->categoryRepository->condition($data)->paginate(10);
         $records = $pagination->all();
+
+
+        foreach ($records as &$record) {
+            $record->count =  $record->tasks->count();
+        }
 
         return [
             'records' => $records,
@@ -154,6 +179,11 @@ class CategoryService extends BaseService
             $this->categoryRepository->deleteWhere($where);
         }
         return $data['id'];
+    }
+
+    public function maxCount($attribute, $value)
+    {
+        dd($attribute);
     }
 
 }

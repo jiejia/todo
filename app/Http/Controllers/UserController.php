@@ -24,6 +24,8 @@ class UserController extends Controller
         $this->middleware('auth', ['except' => [
             'login',
             'store',
+            'sendPasswordEmail',
+            'checkLogin'
         ]]);
 
         $this->userService = $userService;
@@ -109,5 +111,38 @@ class UserController extends Controller
         }
     }
 
-    //
+    /**
+     * @param Request $request
+     * @return array
+     * @throws \Exception
+     * @version  2020-3-27 11:47
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.3.4
+     */
+    public function sendPasswordEmail(Request $request): array
+    {
+        try {
+            $data = $this->userService->sendPasswordEmail($request->all());
+            return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
+        } catch (ValidationException $e) {
+            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+        }
+    }
+
+    /**
+     * @param Request $request
+     * @return array
+     * @license  PHP Version 7.3.4
+     * @version  2020-3-27 11:57
+     * @author   jiejia <jiejia2009@gmail.com>
+     */
+    public function checkLogin(Request $request): array
+    {
+        try {
+            $data = $this->userService->checkLogin($request->all());
+            return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
+        } catch (ValidationException $e) {
+            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+        }
+    }
 }

@@ -3,11 +3,11 @@ namespace App\Repositories;
 
 use Demo\Annotation\Deprecated;
 use Prettus\Repository\Eloquent\BaseRepository;
-use App\Entities\Task;
+use App\Entities\PasswordReset;
 use Prettus\Repository\Contracts\CriteriaInterface;
 use Prettus\Repository\Contracts\RepositoryInterface;
 
-class TaskRepository extends BaseRepository
+class PasswordResetRepository extends BaseRepository
 {
     /**
      * @return string
@@ -16,7 +16,7 @@ class TaskRepository extends BaseRepository
      */
     public function model(): string
     {
-        return Task::class;
+        return PasswordReset::class;
     }
 
 

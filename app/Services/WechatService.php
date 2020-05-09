@@ -2,29 +2,25 @@
 namespace App\Services;
 
 use App\Common\Services\BaseService;
-use App\Entities\PasswordReset;
-use App\Entities\Task\Category;
-use App\Exceptions\PasswordException;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Hash;
-use App\Common\Utils\TokenManager;
-use Mockery\Generator\StringManipulation\Pass\Pass;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 use App\Repositories\PasswordResetRepository;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use App\Services\Task\CategoryService;
+use App\Common\Wechat\WXBizDataCrypt;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Log;
 
-class UserService extends BaseService
+
+class WechatService extends BaseService
 {
     /**
      * @var QuoteRepository
      */
     protected $userRepository;
-
-    protected $categoryServices;
 
     /**
      * 验证规则
@@ -94,78 +90,142 @@ class UserService extends BaseService
     {
         $this->validate($data, $this->rules, $this->message);
 
-        $categoryServices = $this->app->make(CategoryService::class);
-
-        $categoryServices->createOrUpdate(['color' => '#ffccff', 'name' => '默认']);
-
         return $this->userRepository->create($data);
     }
 
     /**
      * @param array $data
-     * @return array
-     * @throws PasswordException
+     * @return array|mixed
      * @throws \Prettus\Validator\Exceptions\ValidatorException
+     * @version  2020/2/29 13:24
      * @author   jiejia <jiejia2009@gmail.com>
      * @license  PHP Version 7.3.4
-     * @version  2020/2/1 11:43
      */
-    public function login(array $data)
+    public function login2(array $data)
     {
-        ### 验证用户名
+        ### 验证code
         $rules = [
-            'username' => 'bail|required|exists:users',
-        ];
-        $messages = [
-          'username.required' => '用户名不能为空',
-          'username.exists' => '用户名不存在'
-        ];
-        $this->validate($data, $rules, $messages);
-        $user = $this->userRepository->findWhere(['username' => $data['username']])->first();
-
-        ### 验证密码
-        if ($user) {
-            $passwordHash = $user->password;
-            $result = Hash::check($data['password'], $passwordHash);
-            if (! $result) {
-                throw new PasswordException('密码错误');
-            }
-        }
-
-        ### 登录(生成token)
-        $claims = [
-            'username' => $user->username,
-            'uid' => $user->id,
-        ];
-        $token = TokenManager::generate($claims);
-        $this->userRepository->update(['last_login_time' => time()], $user->id);
-
-        return ['token' => $token];
-    }
-
-    /**
-     * @param $data
-     * @return array
-     * @license  PHP Version 7.3.4
-     * @version  2020-3-27 11:57
-     * @author   jiejia <jiejia2009@gmail.com>
-     */
-    public function checkLogin($data)
-    {
-        $rules = [
-            'authorization' => 'bail|required|string|max:200'
+            'code' => 'bail|required|string',
+            'signature' => 'bail|required|string',
+            'rawData' => 'bail|required|string',
+            'iv' => 'bail|required|string',
+            'encryptedData' => 'bail|required|string',
         ];
         $this->validate($data, $rules);
 
-        $tokenData = TokenManager::decode($data['authorization']);
-        if ($tokenData) {
-            $user =  $this->userRepository->find($tokenData['uid']);
-            if ($user) {
-                return ['login' => 1];
-            }
+        ### 从微信服务器获取 open_id 和 session_key
+        $http = new \GuzzleHttp\Client();
+        $url = "https://api.weixin.qq.com/sns/jscode2session";
+        $response = $http->get($url, ['verify' => false,'query' =>
+            [
+                'appid' => config('wechat.app_id'),
+                'secret' => config('wechat.app_secret'),
+                'js_code' => $data['code'],
+                'grant_type' => 'authorization_code'
+            ]]);
+        $content = $response->getBody()->getContents();
+        $content = json_decode($content, true);
+
+        ### 验证签名
+        $signature = $data['signature'];
+        $signature2 = sha1($data['rawData'] . $content['session_key']);
+        $this->validate(['signature' => $signature, 'signature2' => $signature2], ['signature' => 'required|same:signature2']);
+
+        ### 第一次登录，生成用户
+        $rawData = json_decode($data['rawData'], true);
+        $user = $this->userRepository->findWhere(['openid' => $content['openid']]);
+        if (! $user) {
+            $user = [
+                'username' => $rawData['nickName'],
+                'openid' => $content['openid'],
+            ];
+            $this->userRepository->create($user);
         }
 
-        return ['login' => 0];
+        ### 生成第三方登录态
+        $crypt = new WXBizDataCrypt(config('wechat.app_id'), $content['session_key']);
+        $code = $crypt->decryptData($data['encryptedData'], $data['iv'], $decrypt);
+        $sessionId = Hash::make($content['session_key'] . $content['openid'] . config('app.key'));
+        $redisKey = 'session_id.' . $content['openid'];
+        Redis::set($redisKey, $sessionId);
+        Redis::expire($redisKey, 3600 * 24);
+
+        if ($code == 0) {
+            $decrypt = json_decode($decrypt, true);
+            $decrypt = array_merge($decrypt, ['sessionId' => $sessionId]);
+            return $decrypt;
+        } else {
+            return [];
+        }
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
+     * @version  2020/3/1 16:38
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.3.4
+     */
+    public function login(array $data)
+    {
+        $rules = [
+            'code' => 'bail|required|string'
+        ];
+        $this->validate($data, $rules);
+
+        ### 从微信服务器获取 open_id 和 session_key
+        $http = new \GuzzleHttp\Client();
+        $url = "https://api.weixin.qq.com/sns/jscode2session";
+        $response = $http->get($url, ['verify' => false,'query' =>
+            [
+                'appid' => config('wechat.app_id'),
+                'secret' => config('wechat.app_secret'),
+                'js_code' => $data['code'],
+                'grant_type' => 'authorization_code'
+            ]]);
+        $content = $response->getBody()->getContents();
+        $content = json_decode($content, true);
+
+        ### 第一次登录，生成用户
+        $user = $this->userRepository->findWhere(['openid' => $content['openid']]);
+        if ($user->isEmpty()) {
+            $user = [
+                'openid' => $content['openid'],
+            ];
+            $this->userRepository->create($user);
+        }
+
+        ### 生成第三方登录态
+        $sessionId = Hash::make($content['session_key'] . $content['openid'] . config('app.key'));
+        $redisKey = 'session_id.' . $content['openid'];
+        Redis::hset($redisKey, 'session_key', $content['session_key']);
+        Redis::hset($redisKey, 'openid', $content['openid']);
+        Redis::expire($redisKey, 3600 * 24);
+
+        return ['sessionId' => $sessionId];
+    }
+
+
+    /**
+     * 检查session是否过期
+     *
+     * @param array $data
+     * @return array
+     * @license  PHP Version 7.3.4
+     * @version  2020/3/2 10:38
+     * @author   jiejia <jiejia2009@gmail.com>
+     */
+    public function checkSession(array $data)
+    {
+        $sessionId = Redis::hget($data['sessionId'], 'openid');
+
+        if ($sessionId) {
+            Redis::expire($sessionId, 3600 * 24); // 未过期，续期sessionId
+            return ['res' => true];
+        } else {
+            return ['res' => false];
+        }
     }
 
     /**
@@ -296,7 +356,7 @@ class UserService extends BaseService
         $passwordResetRepository = app()->make(PasswordResetRepository::class);
         $passwordResetRepository->deleteWhere(['email' => $user['email']]);
         $token = hash_hmac('sha256', Str::random(40), config('key'));
-        $passwordResetRepository->create( ['email' => $user['email'], 'token' => Hash::make($token), 'created_at' => new Carbon]);
+        $passwordResetRepository->create( ['email' => $user['email'], 'token' =>Hash::make($token), 'created_at' => new Carbon]);
 
         ### 发送邮件
         $mail = new PHPMailer(true);

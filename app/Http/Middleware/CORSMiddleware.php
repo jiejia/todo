@@ -43,6 +43,7 @@ class CORSMiddleware
 
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
+
         if (!empty($origin) && !\in_array(trim(str_replace('X_Requested_With: XMLHttpRequest', '', $origin)), $this->allow_origin, true)) {
             return new Response('Forbidden', 403);
         }

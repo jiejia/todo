@@ -3,7 +3,9 @@
 namespace App\Entities\Task;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Entities\Task;
 
 class Category extends Model
 {
@@ -25,7 +27,7 @@ class Category extends Model
      * @var array
      */
     protected $fillable = [
-        'name', 'user_id', 'status'
+        'name', 'user_id', 'status', 'color'
     ];
 
     /**
@@ -35,6 +37,7 @@ class Category extends Model
      */
     protected $attributes = [
         'status' => 0,
+
     ];
 
     /**
@@ -66,4 +69,15 @@ class Category extends Model
     {
         return (int)$value;
     }
+
+    public function setColorAttribute($value)
+    {
+        $this->attributes['color'] = $value;
+    }
+
+    public function tasks():HasMany
+    {
+        return $this->hasMany(Task::class, 'category_id', 'id');
+    }
+
 }
