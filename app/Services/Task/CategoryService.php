@@ -17,7 +17,7 @@ class CategoryService extends BaseService
      * @var array
      */
     protected $rules = [
-        'id' => 'bail|integer|exists:tasks,id',
+        'id' => 'bail|integer|exists:task_category,id',
         'name' => 'bail|required|string|between:1,10',
         'status' => 'bail|integer|in:0,1,2,3,4',
         'color' => 'bail|required|string|size:7',
@@ -66,7 +66,7 @@ class CategoryService extends BaseService
         $rules = $this->rules;
         $rules['color'] = [
           'bail', 'required',
-           'regex:/^#[0-9a-zA-Z]{6}$/'
+          'regex:/^#[0-9a-zA-Z]{6}$/'
         ];
         $rules['name'] = [
             'bail',
@@ -82,12 +82,30 @@ class CategoryService extends BaseService
                 }
             }
         ];
-        $this->validate($data, $rules);
+        if (isset($data['id'])) {
+            $rules['name'] = [
+                'bail',
+                'required',
+                'string',
+                'between:1,10'
+            ];
+            $rules['color'] = [
+                'regex:/^#[0-9a-zA-Z]{6}$/'
+            ];
+        }
+
+        $messages = [
+          'color.regex' => '颜色格式错误',
+          'color.exists' => '颜色不能为空',
+          'id.exists' => '分类不存在',
+          'name.between' => '标题应该在1到15个字符之间',
+          'name.required' => '标题不能未空'
+        ];
+        $this->validate($data, $rules, $messages);
 
         if (isset($data['id'])) {
             return $this->categoryRepository->update($data, $data['id']);
         } else {
-            $update = [];
             return $this->categoryRepository->create($data);
         }
     }
@@ -108,7 +126,8 @@ class CategoryService extends BaseService
         $rules = [
             'user_id' => 'bail|required|integer|exists:users,id',
             's' => 'string|max:20',
-            'status' => 'integer|in:0,1,2,3,4',
+            'status' => 'in:0,1',
+            'is_draft' => 'in:0,1',
             'order_by' => 'in:created_at_desc,created_at_asc,updated_at_desc,updated_at_asc'
         ];
 
@@ -116,7 +135,6 @@ class CategoryService extends BaseService
 
         $pagination = $this->categoryRepository->condition($data)->paginate(10);
         $records = $pagination->all();
-
 
         foreach ($records as &$record) {
             $record->count =  $record->tasks->count();
@@ -145,15 +163,18 @@ class CategoryService extends BaseService
     public function detail(array $data, $columns = ['*'])
     {
         $rules = [
-            'id' => 'bail|required|integer|exists:tasks',
-            'user_id' => 'bail|required|integer|exists:users,id'
+            'id' => 'bail|required|integer|exists:task_category,id',
+            'user_id' => 'bail|required|integer|exists:users,id',
+//            'name' => 'bail|string|between:1,15'
         ];
         $this->validate($data, $rules);
 
         $where = ['id' => $data['id'], 'user_id' => $data['user_id']];
-        $record = $this->categoryRepository->findWhere($where, $columns)->first();
 
-        return $record;
+        $return = $this->categoryRepository->condition($where)->first($columns);
+        if ($return == null)
+            return [];
+        return $return;
     }
 
     /**
@@ -170,14 +191,26 @@ class CategoryService extends BaseService
     {
         $rules = [
           'id' => 'required|array',
-          'id.*' => 'integer',
-          'user_id' => 'integer|exists:users,id'
+          'user_id' => 'integer|exists:users,id',
+          'id.*' => [
+              'integer', 'exists:task_category,id',
+              function($attribute, $value, $fail) use ($data) {
+                  $category = $this->categoryRepository->findByField('id', $value)->first();
+                  if ($category['is_default'])
+                      return $fail("默认分类不能删除");
+              }
+          ]
         ];
-        $this->validate($data, $rules);
-        foreach ($data['id'] as $id) {
-            $where = ['id' => $id, 'user_id' => $data['user_id']];
-            $this->categoryRepository->deleteWhere($where);
-        }
+        $messages = [
+          'id.*.exists' => '分类不存在'
+        ];
+        $this->validate($data, $rules, $messages);
+
+        $condition = [
+            ['id', 'in', $data['id']],
+            'user_id' => $data['user_id']
+        ];
+        $this->categoryRepository->deleteWhere($condition);
         return $data['id'];
     }
 

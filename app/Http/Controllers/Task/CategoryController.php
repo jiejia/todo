@@ -8,6 +8,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use App\Common\Pojo\ResultCode;
 use App\Http\Controllers\Controller;
+use App\Common\Utils\MessageManager;
 
 class CategoryController extends Controller
 {
@@ -46,7 +47,12 @@ class CategoryController extends Controller
             $data = $this->categoryService->createOrUpdate(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -67,7 +73,12 @@ class CategoryController extends Controller
             $data = $this->categoryService->listOrSearch(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -87,7 +98,12 @@ class CategoryController extends Controller
             $data = $this->categoryService->detail(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -107,7 +123,12 @@ class CategoryController extends Controller
             $data = $this->categoryService->delete(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 }

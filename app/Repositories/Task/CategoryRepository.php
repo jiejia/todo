@@ -41,6 +41,16 @@ class CategoryRepository extends BaseRepository
                     $model = $model->WhereRaw("POSITION('{$data['s']}' IN `name`)");
                 }
 
+                // 分类ID
+                if (isset($data['id']) && !empty($data['id'])) {
+                    $model = $model->where('id', '=', $data['id']);
+                }
+
+                // 分类ID组
+                if (isset($data['ids']) && !empty($data['ids'])) {
+                    $model = $model->whereIn('id', $data['ids']);
+                }
+
                 // 状态
                 if (isset($data['status']) && !empty($data['status'])) {
                     $model = $model->where('status', '=', $data['status']);
@@ -49,6 +59,11 @@ class CategoryRepository extends BaseRepository
                 // 所属用户
                 if (isset($data['user_id']) && !empty($data['user_id'])) {
                     $model = $model->where('user_id', '=', $data['user_id']);
+                }
+
+                // 是否是回收站
+                if (isset($data['is_draft']) && !empty($data['is_draft'])) {
+                    $model = $model->where('is_draft', '=', $data['is_draft']);
                 }
 
                 if (isset($data['order_by']) && !empty($data['order_by'])) {
@@ -80,4 +95,27 @@ class CategoryRepository extends BaseRepository
             }
         });
     }
+
+    /**
+     * Applies the given where conditions to the model.
+     *
+     * @param array $where
+     * @return void
+     */
+    protected function applyConditions(array $where)
+    {
+        foreach ($where as $field => $value) {
+            if (is_array($value)) {
+                list($field, $condition, $val) = $value;
+                if ($condition == 'in') {
+                    $this->model = $this->model->whereIn($field, $val);
+                } else {
+                    $this->model = $this->model->where($field, $condition, $val);
+                }
+            } else {
+                $this->model = $this->model->where($field, '=', $value);
+            }
+        }
+    }
+
 }

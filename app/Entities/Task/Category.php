@@ -24,10 +24,10 @@ class Category extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var array
+     * @var arra]
      */
     protected $fillable = [
-        'name', 'user_id', 'status', 'color'
+        'name', 'user_id', 'status', 'color', 'is_default',
     ];
 
     /**
@@ -37,7 +37,7 @@ class Category extends Model
      */
     protected $attributes = [
         'status' => 0,
-
+        'is_default' => 0,
     ];
 
     /**
@@ -70,10 +70,21 @@ class Category extends Model
         return (int)$value;
     }
 
+    public function getIsDefaultAttribute($value)
+    {
+        return (int)$value;
+    }
+
+    public function getStatusAttribute($value)
+    {
+        return (int)$value;
+    }
+
     public function setColorAttribute($value)
     {
         $this->attributes['color'] = $value;
     }
+
 
     public function tasks():HasMany
     {

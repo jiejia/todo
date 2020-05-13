@@ -24,12 +24,11 @@ class Handler extends ExceptionHandler
     ];
 
     /**
-     * Report or log an exception.
-     *
-     * This is a great spot to send exceptions to Sentry, Bugsnag, etc.
-     *
-     * @param  \Exception  $exception
-     * @return void
+     * @param Exception $exception
+     * @throws Exception
+     * @version  2020-5-12 9:59
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
      */
     public function report(Exception $exception)
     {
