@@ -2,12 +2,12 @@
 namespace App\Repositories\Task;
 
 use Demo\Annotation\Deprecated;
-use Prettus\Repository\Eloquent\BaseRepository;
+use App\Repositories\Repository;
 use App\Entities\Task\Category;
 use Prettus\Repository\Contracts\CriteriaInterface;
 use Prettus\Repository\Contracts\RepositoryInterface;
 
-class CategoryRepository extends BaseRepository
+class CategoryRepository extends Repository
 {
     /**
      * @return string
@@ -95,27 +95,4 @@ class CategoryRepository extends BaseRepository
             }
         });
     }
-
-    /**
-     * Applies the given where conditions to the model.
-     *
-     * @param array $where
-     * @return void
-     */
-    protected function applyConditions(array $where)
-    {
-        foreach ($where as $field => $value) {
-            if (is_array($value)) {
-                list($field, $condition, $val) = $value;
-                if ($condition == 'in') {
-                    $this->model = $this->model->whereIn($field, $val);
-                } else {
-                    $this->model = $this->model->where($field, $condition, $val);
-                }
-            } else {
-                $this->model = $this->model->where($field, '=', $value);
-            }
-        }
-    }
-
 }

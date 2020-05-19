@@ -10,11 +10,11 @@ use Exception;
 
 class TokenManager
 {
-    private const ISSUER = 'http://todo.test';
+    private const ISSUER = 'http://200.todo.test';
 
-    private const AUDIENCE = 'http://todo.test';
+    private const AUDIENCE = 'http://200.todo.test';
 
-    private const EXPIRES_TIME = 60 * 60 * 24;
+    public const EXPIRES_TIME = 60 * 60 * 24;
 
     private const KEY = 'lkCDEE2DGJsr1jWDStHnNUvLLQuzinC3';
 

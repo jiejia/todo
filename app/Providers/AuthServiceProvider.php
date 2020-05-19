@@ -43,8 +43,7 @@ class AuthServiceProvider extends ServiceProvider
                 $token = str_replace('Bearer ', '', $token);
                 $tokenData = TokenManager::decode($token);
                 if ($tokenData) {
-                    $user =  $this->app[UserService::class]->detail(['id' => $tokenData['uid']], ['username', 'id', 'last_login_time', 'email']);
-                    return $user;
+                    return $this->app[UserService::class]->detail(['id' => $tokenData['uid']], ['username', 'id', 'last_login_time', 'email']);
                 }
             }
             return null;

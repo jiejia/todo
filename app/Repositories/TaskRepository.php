@@ -1,13 +1,12 @@
 <?php
 namespace App\Repositories;
 
-use Demo\Annotation\Deprecated;
-use Prettus\Repository\Eloquent\BaseRepository;
+use App\Repositories\Repository;
 use App\Entities\Task;
 use Prettus\Repository\Contracts\CriteriaInterface;
 use Prettus\Repository\Contracts\RepositoryInterface;
 
-class TaskRepository extends BaseRepository
+class TaskRepository extends Repository
 {
     /**
      * @return string
@@ -18,7 +17,6 @@ class TaskRepository extends BaseRepository
     {
         return Task::class;
     }
-
 
     public function condition(array $param)
     {

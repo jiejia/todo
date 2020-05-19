@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Common\Utils\MessageManager;
 use App\Services\TaskService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use App\Common\Pojo\ResultCode;
-use App\Exceptions\PasswordException;
 
 class TaskController extends Controller
 {
@@ -46,7 +46,12 @@ class TaskController extends Controller
             $data = $this->taskService->createOrUpdate(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -67,7 +72,12 @@ class TaskController extends Controller
             $data = $this->taskService->listOrSearch(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -87,7 +97,12 @@ class TaskController extends Controller
             $data = $this->taskService->detail(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -107,7 +122,12 @@ class TaskController extends Controller
             $data = $this->taskService->delete(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 }

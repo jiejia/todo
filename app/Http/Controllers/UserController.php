@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Common\Utils\MessageManager;
 use App\Services\UserService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use App\Common\Pojo\ResultCode;
-use App\Exceptions\PasswordException;
+use App\Exceptions\User\PasswordException;
 
 class UserController extends Controller
 {
@@ -45,10 +46,15 @@ class UserController extends Controller
     public function store(Request $request): array
     {
         try {
-            $data = $this->userService->store($request->all());
+            $data = $this->userService->store(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -66,10 +72,15 @@ class UserController extends Controller
     public function changePassword(Request $request): array
     {
         try {
-            $data = $this->userService->changePassword(array_merge($request->all(), ['id' => Auth::id()]));
+            $data = $this->userService->changePassword(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -87,20 +98,41 @@ class UserController extends Controller
     public function updateProfile(Request $request): array
     {
         try {
-            $data = $this->userService->updateProfile(array_merge($request->all(), ['id' => Auth::id()]));
+            $data = $this->userService->updateProfile(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
+    /**
+     * 修改头像
+     *
+     * @param Request $request
+     * @return array
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
+     *
+     * @version  2020-5-19 9:42
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
+     */
     public function changeAvatar(Request $request): array
     {
         try {
-            $data = $this->userService->changeAvatar(array_merge($request->all(), ['id' => Auth::id()]));
+            $data = $this->userService->changeAvatar(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
@@ -121,16 +153,40 @@ class UserController extends Controller
             $data = $this->userService->login($request->all());
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         } catch (PasswordException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => ['password' => [$e->getMessage()]]];
-
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => ['password' => $e->getMessage()]
+            ];
         }
     }
 
+    /**
+     * 登出
+     *
+     * @param Request $request
+     * @return array
+     * @version  2020-5-19 9:35
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
+     */
     public function logout(Request $request): array
     {
-        return [];
+        $token = $request->header('authorization');
+        $token = str_replace('Bearer ', '', $token);
+        return [
+            'code' => 0,
+            'msg' => '操作成功',
+            'data' => ['token' => $token, 'msg' => '请客户端自行关闭此token']
+        ];
     }
 
     /**
@@ -149,11 +205,18 @@ class UserController extends Controller
             $data = $this->userService->detail(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
     /**
+     * 发送修改密码邮件
+     *
      * @param Request $request
      * @return array
      * @throws \Exception
@@ -164,27 +227,40 @@ class UserController extends Controller
     public function sendPasswordEmail(Request $request): array
     {
         try {
-            $data = $this->userService->sendPasswordEmail($request->all());
+            $data = $this->userService->sendPasswordEmail(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 
     /**
+     * 刷新token
+     *
      * @param Request $request
      * @return array
-     * @license  PHP Version 7.3.4
-     * @version  2020-3-27 11:57
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
+     * @version  2020-5-19 9:48
      * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
      */
-    public function checkLogin(Request $request): array
+    public function refresh(Request $request): array
     {
         try {
-            $data = $this->userService->checkLogin($request->all());
+            $data = $this->userService->refresh(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
-            return ['code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'], 'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'], 'data' => $e->errors()];
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
         }
     }
 }

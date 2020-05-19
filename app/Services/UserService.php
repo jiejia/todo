@@ -2,7 +2,7 @@
 namespace App\Services;
 
 use App\Common\Services\BaseService;
-use App\Exceptions\PasswordException;
+use App\Exceptions\User\PasswordException;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Hash;
 use App\Common\Utils\TokenManager;
@@ -138,7 +138,41 @@ class UserService extends BaseService
         $token = TokenManager::generate($claims);
         $this->userRepository->update(['last_login_time' => time()], $user->id);
 
-        return ['token' => $token];
+        return ['token' => $token, 'token_type' => 'Bearer', 'expires_in' => TokenManager::EXPIRES_TIME];
+    }
+
+    /**
+     * 刷新token
+     *
+     * @param array $data
+     * @return array
+     * @throws \Prettus\Validator\Exceptions\ValidatorException
+     *
+     * @version  2020-5-19 9:48
+     * @author   jiejia <jiejia2009@gmail.com>
+     * @license  PHP Version 7.2.9
+     */
+    public function refresh(array $data)
+    {
+        ### 验证用户名
+        $rules = [
+            'user_id' => 'bail|required|exists:users,id',
+        ];
+        $messages = [
+            'user_id.exists' => '用户不存在'
+        ];
+        $this->validate($data, $rules, $messages);
+        $user = $this->userRepository->findWhere(['id' => $data['user_id']])->first();
+
+        ### 登录(生成token)
+        $claims = [
+            'username' => $user->username,
+            'uid' => $user->id,
+        ];
+        $token = TokenManager::generate($claims);
+        $this->userRepository->update(['last_login_time' => time()], $user->id);
+
+        return ['token' => $token, 'original_token' => app('request')->header('authorization'), 'token_type' => 'Bearer', 'expires_in' => TokenManager::EXPIRES_TIME, 'msg' => '请客户端自行关闭original_token'];
     }
 
     /**

@@ -33,6 +33,7 @@ class Task extends Model
      */
     protected $attributes = [
         'status' => 0,
+        'deadline' => 0
     ];
 
     /**
@@ -53,9 +54,9 @@ class Task extends Model
     public function setDeadlineAttribute($value)
     {
         if (empty($value)) {
-            $value = date('Y-m-d H:i:s');
+            $value = time();
         }
-        $this->attributes['deadline'] = strtotime($value);
+        $this->attributes['deadline'] = $value;
     }
 
     public function getCategoryIdAttribute($value)

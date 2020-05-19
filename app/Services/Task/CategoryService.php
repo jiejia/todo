@@ -196,7 +196,7 @@ class CategoryService extends BaseService
               'integer', 'exists:task_category,id',
               function($attribute, $value, $fail) use ($data) {
                   $category = $this->categoryRepository->findByField('id', $value)->first();
-                  if ($category['is_default'])
+                  if ($category && $category->is_default == 1)
                       return $fail("默认分类不能删除");
               }
           ]
@@ -210,13 +210,10 @@ class CategoryService extends BaseService
             ['id', 'in', $data['id']],
             'user_id' => $data['user_id']
         ];
+
+        ### TODO 清空分类下任务
         $this->categoryRepository->deleteWhere($condition);
+
         return $data['id'];
     }
-
-    public function maxCount($attribute, $value)
-    {
-        dd($attribute);
-    }
-
 }

@@ -22,11 +22,8 @@ class CategoryController extends Controller
      */
     public function __construct(CategoryService $categoryService)
     {
-        //
         $this->middleware('auth');
-
         $this->user = Auth::user();
-
         $this->categoryService = $categoryService;
     }
 
