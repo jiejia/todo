@@ -31,6 +31,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 
     $router->post('/user/login', ['as' => 'user.login', 'uses' => 'UserController@login']);
     $router->post('/user/refresh', ['as' => 'user.refresh', 'uses' => 'UserController@refresh']);
+    $router->post('/user/check-login', ['as' => 'user.checkLogin', 'uses' => 'UserController@checkLogin']);
     $router->post('/user/logout', ['as' => 'user.logout', 'uses' => 'UserController@logout']);
     $router->post('/user/send-password-email', ['as' => 'user.sendPasswordEmail', 'uses' => 'UserController@sendPasswordEmail']);
     $router->post('/user/password-reset', ['as' => 'user.passwordReset', 'uses' => 'UserController@passwordReset']);

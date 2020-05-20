@@ -26,7 +26,8 @@ class UserController extends Controller
             'login',
             'store',
             'sendPasswordEmail',
-            'checkLogin'
+            'checkLogin',
+            'passwordReset'
         ]]);
 
         $this->userService = $userService;
@@ -69,10 +70,10 @@ class UserController extends Controller
      * @author   jiejia <jiejia2009@gmail.com>
      * @license  PHP Version 7.2.9
      */
-    public function changePassword(Request $request): array
+    public function passwordReset(Request $request): array
     {
         try {
-            $data = $this->userService->changePassword(array_merge($request->all(), ['user_id' => Auth::id()]));
+            $data = $this->userService->passwordReset(array_merge($request->all(), ['user_id' => Auth::id()]));
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
             return [
@@ -253,6 +254,30 @@ class UserController extends Controller
     {
         try {
             $data = $this->userService->refresh(array_merge($request->all(), ['user_id' => Auth::id()]));
+            return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
+        } catch (ValidationException $e) {
+            return [
+                'code' => ResultCode::PARAMETER_VALIDATION_ERROR['code'],
+                'msg' => ResultCode::PARAMETER_VALIDATION_ERROR['msg'],
+                'data' => [],
+                'errors' => MessageManager::getValidateErrors($e->errors())
+            ];
+        }
+    }
+
+    /**
+     * 检查登录
+     *
+     * @param Request $request
+     * @return array
+     * @license  PHP Version 7.3.4
+     * @version  2020-3-27 11:57
+     * @author   jiejia <jiejia2009@gmail.com>
+     */
+    public function checkLogin(Request $request): array
+    {
+        try {
+            $data = $this->userService->checkLogin($request->all());
             return ['code' => ResultCode::OK['code'], 'msg' => ResultCode::OK['msg'], 'data' => $data];
         } catch (ValidationException $e) {
             return [

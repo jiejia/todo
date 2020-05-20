@@ -24,6 +24,10 @@ class UserService extends BaseService
 
     protected $categoryServices;
 
+    protected const PASSWORD_TOKEN_CIRCLE_TIME = 60;
+
+    protected const PASSWORD_TOKEN_EXPIRE_TIME = 600;
+
     /**
      * 验证规则
      *
@@ -92,14 +96,18 @@ class UserService extends BaseService
     {
         $this->validate($data, $this->rules, $this->message);
 
-        $categoryServices = $this->app->make(CategoryService::class);
+        // 创建用户
+        $user = $this->userRepository->create($data);
+        // 创建默认分类
+        $categoryServices = App()->make(CategoryService::class);
+        $categoryServices->createOrUpdate(['color' => '#ffccff', 'name' => '默认', 'user_id' => $user->id, 'is_default' => 1]);
 
-        $categoryServices->createOrUpdate(['color' => '#ffccff', 'name' => '默认']);
-
-        return $this->userRepository->create($data);
+        return $user;
     }
 
     /**
+     * 登录
+     *
      * @param array $data
      * @return array
      * @throws PasswordException
@@ -112,14 +120,15 @@ class UserService extends BaseService
     {
         ### 验证用户名
         $rules = [
-            'username' => 'bail|required|exists:users',
+            'email' => 'bail|required|email|exists:users',
         ];
         $messages = [
-          'username.required' => '用户名不能为空',
-          'username.exists' => '用户名不存在'
+          'email.required' => '邮箱不能未空',
+          'email.exists' => '邮箱不存在',
+          'email.email' => '邮箱格式错误'
         ];
         $this->validate($data, $rules, $messages);
-        $user = $this->userRepository->findWhere(['username' => $data['username']])->first();
+        $user = $this->userRepository->findWhere(['email' => $data['email']])->first();
 
         ### 验证密码
         if ($user) {
@@ -246,9 +255,7 @@ class UserService extends BaseService
         $this->validate($data, $rules);
 
         $where = ['id' => $data['id']];
-        $record = $this->userRepository->findWhere($where, $columns)->first();
-
-        return $record;
+        return $this->userRepository->findWhere($where, $columns)->first();
     }
 
     /**
@@ -263,26 +270,25 @@ class UserService extends BaseService
      * @license  PHP Version 7.3.4
      * @version  2019/10/7 9:48
      */
-    public function changePassword(array $data)
+    public function passwordReset(array $data)
     {
-        $this->validate(['id' => $data['id']], ['id' => 'required|bail|integer|exists:users,id']);
-        $user = $this->userRepository->find($data['user_id']);
-
         $rules = [
-            //'username' => 'bail|required|string|max:20|unique:users',
-            'old_password' => [
-                'bail',
-                function ($attribute, $value, $fail) use ($user, $data){
-                    if (! Hash::check($data['old_password'], $user->password)) {
-                        $fail('旧密码错误');
-                    }
-                },
+            'email' => 'required|bail|email|exists:password_resets,email',
+            'token' => [
+              'required', 'bail',
+                function($attribute, $value, $fail) use ($data) {
+                    $reset = app()->make(PasswordResetRepository::class)->findWhere(['token' => $data['token'], 'email' => $data['email']])->first();
+                    if (! $reset)
+                        return $fail("token错误，请重新发送验证邮件");
+                    $expire = strtotime($reset->created_at) + self::PASSWORD_TOKEN_EXPIRE_TIME;
+                    if ($expire < time())
+                        return $fail("token已过期，请重新发送验证邮件");
+                    return true;
+                }
             ],
             'password' => [
                 'bail',
-                'required_with:old_password',
                 'between:6,20',
-                'different:old_password',
                 'confirmed'
             ],
             'password_confirmation' => [
@@ -298,7 +304,14 @@ class UserService extends BaseService
         ];
 
         $this->validate($data, $rules, $messages);
-        return $this->userRepository->update($data, $data['id']);
+        $user = $this->userRepository->findWhere(['email' => $data['email']])->first();
+
+        // 让token过期
+        $reset = app()->make(PasswordResetRepository::class)->findWhere(['token' => $data['token'], 'email' => $data['email']])->first();
+        $expireTime = date('Y-m-d H:i:s', strtotime($reset->created_at) - self::PASSWORD_TOKEN_EXPIRE_TIME);
+        app()->make(PasswordResetRepository::class)->update(['created_at' => $expireTime], $reset->id);
+
+        return $this->userRepository->update(['password' => $data['password']], $user->id);
     }
 
     /**
@@ -361,6 +374,8 @@ class UserService extends BaseService
     }
 
     /**
+     * 发送找回密码邮件
+     *
      * @param array $data
      * @return array
      * @throws \Exception
@@ -371,9 +386,20 @@ class UserService extends BaseService
     public function sendPasswordEmail(array $data)
     {
         ### 验证用户名
-//        dd($data);
         $rules = [
-            'email' => 'bail|required|exists:users|email',
+            'email' => [
+                'required', 'bail', 'email', 'exists:users,email',
+                function($attribute, $value, $fail) use ($data) {
+                    $reset = app()->make(PasswordResetRepository::class)->findWhere(['email' => $data['email']])->first();
+                    if ($reset) {
+                        $expire = strtotime($reset->created_at) + self::PASSWORD_TOKEN_CIRCLE_TIME;
+                        $expire = $expire - time();
+                        if ($expire > 0)
+                            return $fail("您的重置密码尚未过期，请" . $expire . "秒后重新申请重置密码");
+                    }
+                    return true;
+                }
+            ],
         ];
         $messages = [
             'email.required' => '邮箱不能为空',
@@ -381,13 +407,14 @@ class UserService extends BaseService
             'email.email' => '邮箱格式错误'
         ];
         $this->validate($data, $rules, $messages);
-        $user = $this->userRepository->findWhere(['email' => $data['email']])->first();
+        $user = $this->userRepository->orderBy('created_at', 'asc')->findWhere(['email' => $data['email']])->first();
 
         ### 生成token
         $passwordResetRepository = app()->make(PasswordResetRepository::class);
-        $passwordResetRepository->deleteWhere(['email' => $user['email']]);
+//        $passwordResetRepository->deleteWhere(['email' => $user['email']]);
         $token = hash_hmac('sha256', Str::random(40), config('key'));
-        $passwordResetRepository->create( ['email' => $user['email'], 'token' => Hash::make($token), 'created_at' => new Carbon]);
+        $token = Hash::make($token);
+        $passwordResetRepository->create( ['email' => $user['email'], 'token' => $token, 'created_at' => new Carbon]);
 
         ### 发送邮件
         $mail = new PHPMailer(true);
@@ -398,7 +425,7 @@ class UserService extends BaseService
             $mail->Host       = 'smtp.qq.com';                    // Set the SMTP server to send through
             $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
             $mail->Username   = '314728819@qq.com';                     // SMTP username
-            $mail->Password   = 'xnpguxxmnathbijb';                               // SMTP password
+            $mail->Password   = 'ampjdumsahkxbjeb';                               // SMTP password
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` also accepted
             $mail->Port       = 465;                                    // TCP port to connect to
 
@@ -414,11 +441,9 @@ class UserService extends BaseService
             $mail->AltBody = '60秒后过期';
             $mail->AltBody = '如果您没有请求密码重置，则不需要进一步操作。';
 
-            $mail->send();
+            return $mail->send();
         } catch (Exception $e) {
-//            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+            return ["Message could not be sent. Mailer Error: {$mail->ErrorInfo}"];
         }
-
-        return [];
     }
 }
